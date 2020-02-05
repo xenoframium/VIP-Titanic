@@ -4,9 +4,10 @@ import pandas as pd
 import numpy as np
 import re
 # Sklearn provides various modules with a common API
-from sklearn import svm, tree, neighbors, neural_network
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
 
 train_data = pd.read_csv('train.csv')
 test_data = pd.read_csv('test.csv')
@@ -132,3 +133,19 @@ train_data=(train_data-mn)/(mn+mx)
 X_train = train_data.loc[:]
 
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.33, random_state=10)
+
+#End of processing
+
+rf_clf = RandomForestClassifier(n_estimators=1750,max_depth=7,min_samples_split=6,min_samples_leaf=6,random_state=20,n_jobs=-1,) 
+rf_clf.fit(X_train.values, y_train.values)
+print(rf_clf.score(X_test.values, y_test.values))
+y_pred = rf_clf.predict(X_test.values)
+y_truth = y_test.values
+FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
+FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+print("FP: " + str(FP / len(y_truth)))
+print("FN: " + str(FN / len(y_truth)))
+
+predictions = rf_clf.predict(test_data.values)
+pred_df = pd.DataFrame(predictions, index=test_data.index, columns=['Survived'])
+pred_df.to_csv('predictions.csv', header=True, sep=',')

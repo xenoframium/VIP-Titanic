@@ -145,3 +145,7 @@ FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == 
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
 print("FP: " + str(FP / len(y_truth)))
 print("FN: " + str(FN / len(y_truth)))
+
+predictions = rf_clf.predict(test_data.values)
+pred_df = pd.DataFrame(predictions, index=test_data.index, columns=['Survived'])
+pred_df.to_csv('predictions.csv', header=True, sep=',')

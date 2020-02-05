@@ -226,11 +226,21 @@ lastFP, lastFN, _ = model_performances[0]
 pareto_optimal_models = [model_performances[0]]
 for FP, FN, model_name in model_performances:
 	if FP == lastFP:
-		lastFP = FP
-		lastFN = FN
 		continue
 	if FN < lastFN:
 		pareto_optimal_models.append((FP, FN, model_name))
 		lastFP = FP
 		lastFN = FN
 print(pareto_optimal_models)
+
+#pareto_optimal_models = model_performances
+
+points = [[], []]
+for i in range(len(pareto_optimal_models)):
+	points[0].append(pareto_optimal_models[i][0])
+	points[1].append(pareto_optimal_models[i][1])
+
+
+from matplotlib import pyplot
+pyplot.scatter(points[0], points[1])
+pyplot.show()

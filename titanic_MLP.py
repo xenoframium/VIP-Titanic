@@ -135,8 +135,13 @@ X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=
 
 
 ##AVNI'S MODELS - I submitted the voting classifier
-gb_clf = ensemble.GradientBoostingClassifier(loss='exponential', learning_rate=0.5, n_estimators=100, subsample=1.)
 mlp_clf = neural_network.MLPClassifier(hidden_layer_sizes = (90,), alpha = 1e-20, max_iter = 200, activation='tanh', solver='lbfgs', learning_rate='constant') 
-svm_clf = svm.SVC(kernel='linear')
+mlp_clf.fit(X_train.values, y_train.values)
+hgb_cfl = ensemble.HistGradientBoostingClassifier(loss='auto', learning_rate=0.05)
+hgb_cfl.fit(X_train.values, y_train.values)
+gb_clf = ensemble.GradientBoostingClassifier(loss='exponential', learning_rate=0.5, n_estimators=100, subsample=1.)
+gb_clf.fit(X_train.values, y_train.values)
 v_cfl = ensemble.VotingClassifier(estimators=[('mlp', mlp_clf), ('gb', gb_clf),('hgb', hgb_cfl)], voting='hard')
+v_cfl.fit(X_train.values, y_train.values)
+
 

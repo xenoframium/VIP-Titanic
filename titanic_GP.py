@@ -287,6 +287,6 @@ accuracyList = []
 for ind in hof:
     accuracyList.append((ind.fitness.values[0]+ind.fitness.values[1])/596)
 
-print("Best Accuracy: %s" %1-min(accuracyList))
+print("Best Accuracy: %s" %(1-min(accuracyList)))
     
     

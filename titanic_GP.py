@@ -177,7 +177,7 @@ pset.addPrimitive(operator.eq, [float, float], bool)
 pset.addPrimitive(if_then_else, [bool, float, float], float)
 
 # terminals
-pset.addEphemeralConstant("b", lambda: random.random() * 100, float)
+pset.addEphemeralConstant("x", lambda: random.random() * 100, float)
 pset.addTerminal(0, bool)
 pset.addTerminal(1, bool)
 
@@ -287,6 +287,6 @@ accuracyList = []
 for ind in hof:
     accuracyList.append((ind.fitness.values[0]+ind.fitness.values[1])/596)
 
-print("Best Accuracy: %s" %min(accuracyList))
+print("Best Accuracy: %s" %1-min(accuracyList))
     
     

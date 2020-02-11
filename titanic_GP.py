@@ -14,6 +14,8 @@ import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
 
+import networkx as nx
+
 
 """----Data Processing----"""
 
@@ -157,6 +159,7 @@ pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(float, 27), bool, "IN")
 pset.addPrimitive(operator.and_, [bool, bool], bool)
 pset.addPrimitive(operator.or_, [bool, bool], bool)
 pset.addPrimitive(operator.not_, [bool], bool)
+pset.addPrimitive(operator.xor, [bool, bool], bool)
 
 # floating point operators
 def safeDiv(left, right):
@@ -177,7 +180,8 @@ pset.addPrimitive(operator.eq, [float, float], bool)
 pset.addPrimitive(if_then_else, [bool, float, float], float)
 
 # terminals
-pset.addEphemeralConstant("x", lambda: random.random() * 100, float)
+for var in "abcdefghij":
+    pset.addEphemeralConstant(var, lambda: random.random() * 100, float)
 pset.addTerminal(0, bool)
 pset.addTerminal(1, bool)
 
@@ -188,7 +192,7 @@ random.seed(25)
 
 
 toolbox = base.Toolbox()
-toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=3)
+toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=2)
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
@@ -208,11 +212,13 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+toolbox.register("mut_eph", gp.mutEphemeral, mode="one")
 
 """Need to test different max heights"""
 
 toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
 toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
+toolbox.decorate("expr_mut", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
 
 def pareto_dominance(ind1, ind2):
     not_equal = False
@@ -227,66 +233,121 @@ def pareto_dominance(ind1, ind2):
 """----Genetic Algorithm----"""
 
 
-numGens = 100
-popSize = 100
-mateRate = .5
-mutRate = .2
 
-pop = toolbox.population(n=popSize)
-hof = tools.ParetoFront()
+popSize = 400
+mateRate = .8
+mutRate = .3
 
-fitnesses = list(map(toolbox.evaluate, pop))
-for ind, fit in zip(pop, fitnesses):
-    ind.fitness.values = fit
-hof.update(pop)
-
-for g in range(numGens):
-    print("-- Generation %i --" % g)
-    offspring = toolbox.select(pop, len(pop))
-    offspring = list(map(toolbox.clone, offspring))
+def evolvePop(popSize,mateRate,mutRate,):
+    pop = toolbox.population(n=popSize)
+    hof = tools.ParetoFront()
     
-    for child1, child2 in zip(offspring[::2], offspring[1::2]):
-        if random.random() < mateRate:
-            toolbox.mate(child1, child2)
-            del child1.fitness.values
-            del child2.fitness.values
-
-    for mutant in offspring:
-        if random.random() < mutRate:
-            toolbox.mutate(mutant)
-            del mutant.fitness.values
-            
-    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-    fitnesses = map(toolbox.evaluate, invalid_ind)
-    for ind, fit in zip(invalid_ind, fitnesses):
+    fitnesses = list(map(toolbox.evaluate, pop))
+    for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
-        
-    pop[:] = offspring
     hof.update(pop)
+    
+    for g in range(50):
+        print("-- Generation %i --" % g)
+        offspring = toolbox.select(pop, len(pop))
+        offspring = list(map(toolbox.clone, offspring))
+        
+        for child1, child2 in zip(offspring[::2], offspring[1::2]):
+            if random.random() < mateRate/100:
+                toolbox.mate(child1, child2)
+                del child1.fitness.values
+                del child2.fitness.values
+    
+        for mutant in offspring:
+            if random.random() < mutRate/100:
+                toolbox.mutate(mutant)
+                del mutant.fitness.values
+            if random.random() < mutRate/100:
+                toolbox.mut_eph(mutant)
+                del mutant.fitness.values
+                
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        fitnesses = map(toolbox.evaluate, invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+            
+        pop[:] = offspring
+        hof.update(pop)
+    return hof,pop
 
+def graphPareto(hof,pop):
+    fitness_1 = [ind.fitness.values[0]/596 for ind in hof] # % FP
+    fitness_2 = [ind.fitness.values[1]/596 for ind in hof] # % FN
+    pop_1 = [ind.fitness.values[0]/596 for ind in pop]
+    pop_2 = [ind.fitness.values[1]/596 for ind in pop]
+    
+    plt.scatter(pop_1, pop_2, color='b')
+    plt.scatter(fitness_1, fitness_2, color='r')
+    plt.plot(fitness_1, fitness_2, color='r', drawstyle='steps-post')
+    plt.xlabel("False Positives")
+    plt.ylabel("False Negatives")
+    plt.title("Pareto Front")
+    plt.show()
+    
+    f1 = np.array(fitness_1)
+    f2 = np.array(fitness_2)
+    
+    print("Area Under Curve: %s" % (np.sum(np.abs(np.diff(f1))*f2[:-1])))
+    
+    accuracyList = []
+    for ind in hof:
+        accuracyList.append((ind.fitness.values[0]+ind.fitness.values[1])/596)
 
-fitness_1 = [ind.fitness.values[0]/596 for ind in hof] # % FP
-fitness_2 = [ind.fitness.values[1]/596 for ind in hof] # % FN
-pop_1 = [ind.fitness.values[0]/596 for ind in pop]
-pop_2 = [ind.fitness.values[1]/596 for ind in pop]
+    print("Best Accuracy: %s" %(1-min(accuracyList)))
 
-plt.scatter(pop_1, pop_2, color='b')
-plt.scatter(fitness_1, fitness_2, color='r')
-plt.plot(fitness_1, fitness_2, color='r', drawstyle='steps-post')
-plt.xlabel("False Positives")
-plt.ylabel("False Negatives")
-plt.title("Pareto Front")
-plt.show()
+hof, pop = evolvePop(popSize,mateRate,mutRate)
+graphPareto(hof,pop)
+    
+    
+"""Random search stuff to optimize hyperparameters"""
+    
+#def getRandomSearches(numSearches, ranges):
+#    """Int for how many tuples of random parameters you want, list of tuples of range of each parameter"""
+#    paramList = []
+#    for n in range(numSearches):
+#        duplicate = True
+#        #this loop goes forever if you are asking for more outputs than are possible with your ranges, so don't do that
+#        while duplicate:
+#            paramTup = ()
+#            for r in ranges:
+#                paramTup += (random.randint(r[0],r[1]),)
+#            duplicate = paramTup in paramList
+#        paramList.append(paramTup)
+#    return paramList
+#
+#popRange = (1,500)
+#mateRange = (0,100)
+#mutRange = (0,100)
+#
+#numSearches = 100
+#
+#params = getRandomSearches(numSearches,[popRange,mateRange,mutRange])
+#
+#hofList = []
+#popList = []
+#
+#count = 0
+#for p in params:
+#    count += 1
+#    print('test ' + str(count))
+#    hof,pop = evolvePop(p[0],p[1],p[2])
+#    hofList.append(hof)
+#    popList.append(pop)
+#
+#aucList = []
+#for hof in hofList:
+#    fitness_1 = [ind.fitness.values[0]/596 for ind in hof] # % FP
+#    fitness_2 = [ind.fitness.values[1]/596 for ind in hof] # % FN 
+#    f1 = np.array(fitness_1)
+#    f2 = np.array(fitness_2)
+#    aucList.append(np.sum(np.abs(np.diff(f1))*f2[:-1]))
 
-f1 = np.array(fitness_1)
-f2 = np.array(fitness_2)
-
-print("Area Under Curve: %s" % (np.sum(np.abs(np.diff(f1))*f2[:-1])))
-
-accuracyList = []
-for ind in hof:
-    accuracyList.append((ind.fitness.values[0]+ind.fitness.values[1])/596)
-
-print("Best Accuracy: %s" %(1-min(accuracyList)))
+            
+    
     
     

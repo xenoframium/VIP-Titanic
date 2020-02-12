@@ -20,10 +20,10 @@ from deap import gp
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
-
-import matplotlib.pyplot as plt
-import networkx as nxs
-
+from sklearn.metrics import confusion_matrix
+#
+#import networkx as nx
+#import pygraphviz as pgv
 
 """----Data Processing----"""
 
@@ -201,22 +201,31 @@ random.seed(25)
 
 toolbox = base.Toolbox()
 toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=2)
-toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr())
+toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 
 def evaluate(individual,points,pset):
     func = gp.compile(expr=individual,pset=pset)
     predictions = [func(*points[x][:27]) for x in range(len(points))]
-    FP = len([x for x in range(len(predictions)) if truth[x] == False and predictions[x] == True])
-    FN = len([x for x in range(len(predictions)) if truth[x] == True and predictions[x] == False])
-    return FP,FN
+    tn, fp, fn, tp = confusion_matrix(truth, predictions).ravel()
+    return fp/(fp+tp),fn/(fn+tn)
     
 toolbox.register("evaluate", evaluate, points=X_train.values, pset=pset)
 
 """Need to find best selection, mating, mutation methods"""
 
-toolbox.register("select", tools.selTournament, tournsize=3)
+NOBJ = 2
+P = [2, 1]
+SCALES = [1, 0.5]
+
+# Create, combine and removed duplicates
+ref_points = [tools.uniform_reference_points(NOBJ, p, s) for p, s in zip(P, SCALES)]
+ref_points = np.concatenate(ref_points, axis=0)
+_, uniques = np.unique(ref_points, axis=0, return_index=True)
+ref_points = ref_points[uniques]
+
+toolbox.register("select", tools.selNSGA3, ref_points=ref_points)
 toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
@@ -240,13 +249,11 @@ def pareto_dominance(ind1, ind2):
 
 """----Genetic Algorithm----"""
 
-
-
 popSize = 400
 mateRate = .8
 mutRate = .3
 
-def evolvePop(popSize,mateRate,mutRate,):
+def evolvePop(popSize,mateRate,mutRate):
     
     pop = toolbox.population(n=popSize)
     hof = tools.ParetoFront()
@@ -279,16 +286,15 @@ def evolvePop(popSize,mateRate,mutRate,):
         fitnesses = map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
-            
         pop[:] = offspring
         hof.update(pop)
     return hof,pop
 
 def graphPareto(hof,pop):
-    fitness_1 = [ind.fitness.values[0]/596 for ind in hof] # % FP
-    fitness_2 = [ind.fitness.values[1]/596 for ind in hof] # % FN
-    pop_1 = [ind.fitness.values[0]/596 for ind in pop]
-    pop_2 = [ind.fitness.values[1]/596 for ind in pop]
+    fitness_1 = [ind.fitness.values[0] for ind in hof] # % FP
+    fitness_2 = [ind.fitness.values[1] for ind in hof] # % FN
+    pop_1 = [ind.fitness.values[0] for ind in pop]
+    pop_2 = [ind.fitness.values[1] for ind in pop]
     
     plt.scatter(pop_1, pop_2, color='b')
     plt.scatter(fitness_1, fitness_2, color='r')
@@ -302,16 +308,31 @@ def graphPareto(hof,pop):
     f2 = np.array(fitness_2)
     
     print("Area Under Curve: %s" % (np.sum(np.abs(np.diff(f1))*f2[:-1])))
-    
-    accuracyList = []
-    for ind in hof:
-        accuracyList.append((ind.fitness.values[0]+ind.fitness.values[1])/596)
-
-    print("Best Accuracy: %s" %(1-min(accuracyList)))
 
 hof, pop = evolvePop(popSize,mateRate,mutRate)
 graphPareto(hof,pop)
     
+#TREE VISUALIZATION CODE
+#pset.renameArguments(ARG0="x")
+#pset.renameArguments(ARG1="y")
+#expr = []
+#for n in hof:
+#    expr = expr + n
+#
+#nodes, edges, labels = gp.graph(expr)
+#    
+#g = pgv.AGraph()
+#g.add_nodes_from(nodes)
+#g.add_edges_from(edges)
+#g.layout(prog="dot")
+#        
+#for i in nodes:
+#    n = g.get_node(i)
+#    n.attr["label"] = labels[i]
+#        
+#g.draw("tree.pdf")    
+
+
     
 """Random search stuff to optimize hyperparameters"""
     
@@ -369,4 +390,3 @@ pos = nx.graphviz_layout(g, prog="dot")
 nx.draw_networkx_nodes(g, pos)
 nx.draw_networkx_edges(g, pos)
 nx.draw_networkx_labels(g, pos, labels)
-plt.show()

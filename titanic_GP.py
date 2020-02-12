@@ -21,6 +21,7 @@ from deap import gp
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 import networkx as nx
 import pygraphviz as pgv
@@ -208,9 +209,8 @@ toolbox.register("compile", gp.compile, pset=pset)
 def evaluate(individual,points,pset):
     func = gp.compile(expr=individual,pset=pset)
     predictions = [func(*points[x][:27]) for x in range(len(points))]
-    FP = len([x for x in range(len(predictions)) if truth[x] == False and predictions[x] == True])
-    FN = len([x for x in range(len(predictions)) if truth[x] == True and predictions[x] == False])
-    return FP,FN
+    tn, fp, fn, tp = confusion_matrix(truth, predictions).ravel()
+    return fp/(fp+tp),fn/(fn+tn)
     
 toolbox.register("evaluate", evaluate, points=X_train.values, pset=pset)
 
@@ -282,10 +282,10 @@ def evolvePop(popSize,mateRate,mutRate):
     return hof,pop
 
 def graphPareto(hof,pop):
-    fitness_1 = [ind.fitness.values[0]/596 for ind in hof] # % FP
-    fitness_2 = [ind.fitness.values[1]/596 for ind in hof] # % FN
-    pop_1 = [ind.fitness.values[0]/596 for ind in pop]
-    pop_2 = [ind.fitness.values[1]/596 for ind in pop]
+    fitness_1 = [ind.fitness.values[0] for ind in hof] # % FP
+    fitness_2 = [ind.fitness.values[1] for ind in hof] # % FN
+    pop_1 = [ind.fitness.values[0] for ind in pop]
+    pop_2 = [ind.fitness.values[1] for ind in pop]
     
     plt.scatter(pop_1, pop_2, color='b')
     plt.scatter(fitness_1, fitness_2, color='r')
@@ -299,12 +299,6 @@ def graphPareto(hof,pop):
     f2 = np.array(fitness_2)
     
     print("Area Under Curve: %s" % (np.sum(np.abs(np.diff(f1))*f2[:-1])))
-    
-    accuracyList = []
-    for ind in hof:
-        accuracyList.append((ind.fitness.values[0]+ind.fitness.values[1])/596)
-
-    print("Best Accuracy: %s" %(1-min(accuracyList)))
 
 hof, pop = evolvePop(popSize,mateRate,mutRate)
 graphPareto(hof,pop)

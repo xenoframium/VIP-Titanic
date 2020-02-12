@@ -187,6 +187,19 @@ pset.addPrimitive(operator.lt, [float, float], bool)
 pset.addPrimitive(operator.eq, [float, float], bool)
 pset.addPrimitive(if_then_else, [bool, float, float], float)
 
+def relu(inp):
+    if inp > 0:
+        return inp
+    return 0
+pset.addPrimitive(relu, [float], float)
+
+import math
+def sigmoid(inp):
+    return 1 / (1 + math.exp(-inp))
+
+pset.addPrimitive(sigmoid, [float], float)
+#pset.addPrimitive(math.sin, [float], float)
+
 # terminals
 for var in "abcdefghij":
     pset.addEphemeralConstant(var, lambda: random.random() * 100, float)
@@ -233,9 +246,9 @@ toolbox.register("mut_eph", gp.mutEphemeral, mode="one")
 
 """Need to test different max heights"""
 
-toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
-toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
-toolbox.decorate("expr_mut", gp.staticLimit(key=operator.attrgetter("height"), max_value=17))
+toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=27))
+toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=27))
+toolbox.decorate("expr_mut", gp.staticLimit(key=operator.attrgetter("height"), max_value=27))
 
 def pareto_dominance(ind1, ind2):
     not_equal = False
@@ -249,9 +262,17 @@ def pareto_dominance(ind1, ind2):
 
 """----Genetic Algorithm----"""
 
+<<<<<<< Updated upstream
 popSize = 400
 mateRate = .8
 mutRate = .3
+=======
+
+
+popSize = 500
+mateRate = .5
+mutRate = .03
+>>>>>>> Stashed changes
 
 def evolvePop(popSize,mateRate,mutRate):
     
@@ -269,16 +290,16 @@ def evolvePop(popSize,mateRate,mutRate):
         offspring = list(map(toolbox.clone, offspring))
         
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
-            if random.random() < mateRate/100:
+            if random.random() < mateRate:
                 toolbox.mate(child1, child2)
                 del child1.fitness.values
                 del child2.fitness.values
     
         for mutant in offspring:
-            if random.random() < mutRate/100:
+            if random.random() < mutRate:
                 toolbox.mutate(mutant)
                 del mutant.fitness.values
-            if random.random() < mutRate/100:
+            if random.random() < mutRate:
                 toolbox.mut_eph(mutant)
                 del mutant.fitness.values
                 
@@ -291,10 +312,11 @@ def evolvePop(popSize,mateRate,mutRate):
     return hof,pop
 
 def graphPareto(hof,pop):
-    fitness_1 = [ind.fitness.values[0] for ind in hof] # % FP
-    fitness_2 = [ind.fitness.values[1] for ind in hof] # % FN
-    pop_1 = [ind.fitness.values[0] for ind in pop]
-    pop_2 = [ind.fitness.values[1] for ind in pop]
+    print(hof[0].fitness.values[0])
+    fitness_1 = [ind.fitness.values[0]/len([x for x in truth if x]) for ind in hof] # % FP
+    fitness_2 = [ind.fitness.values[1]/len([x for x in truth if not x]) for ind in hof] # % FN
+    pop_1 = [ind.fitness.values[0]/len([x for x in truth if x]) for ind in pop]
+    pop_2 = [ind.fitness.values[1]/len([x for x in truth if not x]) for ind in pop]
     
     plt.scatter(pop_1, pop_2, color='b')
     plt.scatter(fitness_1, fitness_2, color='r')

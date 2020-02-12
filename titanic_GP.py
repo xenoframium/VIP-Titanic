@@ -277,24 +277,8 @@ def evolvePop(popSize,mateRate,mutRate):
         fitnesses = map(toolbox.evaluate, invalid_ind)
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
-            
         pop[:] = offspring
         hof.update(pop)
-    #TREE VISUALIZATION CODE
-    expr = toolbox.individual()
-    nodes, edges, labels = gp.graph(expr)
-
-    g = pgv.AGraph()
-    g.add_nodes_from(nodes)
-    g.add_edges_from(edges)
-    g.layout(prog="dot")
-    
-    for i in nodes:
-        n = g.get_node(i)
-        n.attr["label"] = labels[i]
-    
-    g.draw("tree.pdf")
-    
     return hof,pop
 
 def graphPareto(hof,pop):
@@ -325,6 +309,27 @@ def graphPareto(hof,pop):
 hof, pop = evolvePop(popSize,mateRate,mutRate)
 graphPareto(hof,pop)
     
+#TREE VISUALIZATION CODE
+pset.renameArguments(ARG0="x")
+pset.renameArguments(ARG1="y")
+expr = []
+for n in hof:
+    expr = expr + n
+
+nodes, edges, labels = gp.graph(expr)
+    
+g = pgv.AGraph()
+g.add_nodes_from(nodes)
+g.add_edges_from(edges)
+g.layout(prog="dot")
+        
+for i in nodes:
+    n = g.get_node(i)
+    n.attr["label"] = labels[i]
+        
+g.draw("tree.pdf")    
+
+
     
 """Random search stuff to optimize hyperparameters"""
     

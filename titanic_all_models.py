@@ -137,30 +137,34 @@ X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=
 
 y_truth = y_test.values
 model_performances = []
+acc = []
 
 svm_clf =  svm.SVC(kernel = "poly", tol = 1e-6, degree = 6, gamma = "scale")
 svm_clf.fit(X_train.values, y_train.values)
 y_pred = svm_clf.predict(X_test.values)
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(svm_clf.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "SVM poly"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "SVM poly"))
 
 svm_clf =  svm.SVC(kernel = "rbf", tol = 1e-6, C = 2, gamma = "scale")
 svm_clf.fit(X_train.values, y_train.values)
 y_pred = svm_clf.predict(X_test.values)
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(svm_clf.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "SVM rbf"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "SVM rbf"))
 
 svm_clf =  svm.SVC(kernel = "linear", tol = 1e-6, C = 2, gamma = "auto")
 svm_clf.fit(X_train.values, y_train.values)
 y_pred = svm_clf.predict(X_test.values)
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
+acc.append(svm_clf.score(X_test.values, y_test))
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "SVM linear"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "SVM linear"))
 
 from sklearn.naive_bayes import GaussianNB
 clf = GaussianNB()
@@ -168,8 +172,9 @@ clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(clf.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "Gaussian Naive Bayes"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "Gaussian Naive Bayes"))
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
@@ -179,8 +184,9 @@ rf_clf.fit(X_train.values, y_train.values)
 y_pred = rf_clf.predict(X_test.values)
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(rf_clf.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "Random Forest"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "Random Forest"))
 
 hgb_cfl = ensemble.HistGradientBoostingClassifier(loss='auto', learning_rate=0.05)
 hgb_cfl.fit(X_train.values, y_train.values)
@@ -188,8 +194,9 @@ y_pred = hgb_cfl.predict(X_test.values)
 
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(hgb_cfl.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "HistGradientBoostingClassifier"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "HistGradientBoostingClassifier"))
 
 gb_clf = ensemble.GradientBoostingClassifier(loss='exponential', learning_rate=0.5, n_estimators=100, subsample=1.)
 gb_clf.fit(X_train.values, y_train.values)
@@ -197,8 +204,9 @@ y_pred = gb_clf.predict(X_test.values)
 
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(gb_clf.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "GradientBoostingClassifier"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "GradientBoostingClassifier"))
 
 mlp_clf = neural_network.MLPClassifier(hidden_layer_sizes = (90,), alpha = 1e-20, max_iter = 200, activation='tanh', solver='lbfgs', learning_rate='constant') 
 #no tanh maybe relu >> identity >> 10ogistic, no SGD, maybe adam
@@ -208,8 +216,9 @@ y_pred = mlp_clf.predict(X_test.values)
 
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(mlp_clf.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "MLP"))
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "MLP"))
 
 v_cfl = ensemble.VotingClassifier(estimators=[('mlp', mlp_clf), ('gb', gb_clf),('hgb', hgb_cfl)], voting='hard')
 v_cfl.fit(X_train.values, y_train.values)
@@ -217,14 +226,18 @@ y_pred = v_cfl.predict(X_test.values)
 
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+acc.append(v_cfl.score(X_test.values, y_test))
 
-model_performances.append((FP / len(y_truth), FN / len(y_truth), "MLP with voting"))
-
+model_performances.append((FP / len([x for x in y_truth if x]), FN / len([x for x in y_truth if not x]), "MLP with voting"))
 model_performances = sorted(model_performances)
 
 lastFP, lastFN, _ = model_performances[0]
 pareto_optimal_models = [model_performances[0]]
+allpoints = [[], [], []]
 for FP, FN, model_name in model_performances:
+	allpoints[0].append(FP)
+	allpoints[1].append(FN)
+	allpoints[2].append(model_name)
 	if FP == lastFP:
 		continue
 	if FN < lastFN:
@@ -235,12 +248,26 @@ print(pareto_optimal_models)
 
 #pareto_optimal_models = model_performances
 
-points = [[], []]
+points = [[], [], []]
 for i in range(len(pareto_optimal_models)):
 	points[0].append(pareto_optimal_models[i][0])
 	points[1].append(pareto_optimal_models[i][1])
+	points[2].append(pareto_optimal_models[i][2])
 
 
 from matplotlib import pyplot
+pyplot.title("ML Classifying Algorithms")
+for i in range(len(points[0])):
+    pyplot.annotate(points[2][i], (points[0][i], points[1][i]))
 pyplot.scatter(points[0], points[1])
+pyplot.xlabel("False Positive Rate")
+pyplot.ylabel("False Negative Rate")
+pyplot.plot(points[0], points[1], color='r', drawstyle='steps-post')
 pyplot.show()
+f1 = np.array(points[0])
+f2 = np.array(points[1])
+
+print("Area Under Curve: %s" % (np.sum(np.abs(np.diff(f1))*f2[:-1])))
+
+
+print("Best Accuracy: %s" %(max(acc)))

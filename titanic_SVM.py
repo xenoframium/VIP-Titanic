@@ -142,5 +142,54 @@ y_pred = svm_clf.predict(X_test.values)
 y_truth = y_test.values
 FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
 FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
-print("FP: " + str(FP / len(y_truth)))
-print("FN: " + str(FN / len(y_truth)))
+print("FP: " + str(FP / len([x for x in y_truth if x])))
+print("FN: " + str(FN / len([x for x in y_truth if not x])))
+
+import matplotlib.pyplot as plt
+import itertools
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+
+# Compute confusion matrix
+cnf_matrix = confusion_matrix(y_truth, y_pred)
+class_names=['0', '1']
+np.set_printoptions(precision=2)
+
+# Plot non-normalized confusion matrix
+plt.figure()
+plot_confusion_matrix(cnf_matrix, classes=class_names,
+                      title='Confusion matrix, without normalization')
+
+plt.show()

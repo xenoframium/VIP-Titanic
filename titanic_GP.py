@@ -262,17 +262,9 @@ def pareto_dominance(ind1, ind2):
 
 """----Genetic Algorithm----"""
 
-<<<<<<< Updated upstream
 popSize = 400
 mateRate = .8
 mutRate = .3
-=======
-
-
-popSize = 500
-mateRate = .5
-mutRate = .03
->>>>>>> Stashed changes
 
 def evolvePop(popSize,mateRate,mutRate):
     

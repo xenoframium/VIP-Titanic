@@ -1,20 +1,17 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Feb  9 09:34:39 2020
-
-@author: tsandhu
-"""
-
 # Pandas is a nice utilitiy that enables some easy data manipulation, especially from a csv
 import pandas as pd
 # Numpy lets us work with arrays
 import numpy as np
+import matplotlib.pyplot as plt
 import re
 # Sklearn provides various modules with a common API
+from sklearn import svm, tree, neighbors, neural_network
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+
+
+
 
 train_data = pd.read_csv('train.csv')
 test_data = pd.read_csv('test.csv')
@@ -141,18 +138,29 @@ X_train = train_data.loc[:]
 
 X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.33, random_state=10)
 
+
 #End of processing
 
-sgd_clf =  SGDClassifier( max_iter=90)
-sgd_clf.fit(X_train.values, y_train.values)
-print(sgd_clf.score(X_test.values, y_test.values))
-y_pred = sgd_clf.predict(X_test.values)
-y_truth = y_test.values
-FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
-FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
-print("FP: " + str(FP / len(y_truth)))
-print("FN: " + str(FN / len(y_truth)))
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.datasets import make_classification
 
+PAC_clf = PassiveAggressiveClassifier(max_iter=1000, random_state=0, tol=1e-4)
+PAC_clf.fit(X_train.values, y_train.values)
+print(PAC_clf.score(X_test.values, y_test.values))
+y_pred = PAC_clf.predict(X_test.values)
+y_truth = y_test.values
+
+tn, fp, fn, tp = confusion_matrix(y_truth, y_pred).ravel()
+print("\nConfusion Matrix")
+print(confusion_matrix(y_truth, y_pred, labels=[0, 1]))
+print("")
+print("True Negatives", tn)
+print("False Positives", fp)
+print("False Negatives", fn)
+print("True Positives", tp)
+
+##################################
+## confusion matrix
 
 import itertools
 import matplotlib.pyplot as plt
@@ -203,18 +211,15 @@ plot_confusion_matrix(cnf_matrix, classes=class_names,
                       title='Confusion matrix, without normalization')
 
 plt.show()
-
-plt.scatter(FP,FN, color='b')
-plt.xlabel('false positives')
-plt.ylabel('true positives')
-plt.show()
-
-predictions = sgd_clf.predict(test_data.values)
-type(predictions)
+#######################################
+FP = len([x for x in range(len(y_pred)) if y_truth[x] == False and y_pred[x] == True])
+FN = len([x for x in range(len(y_pred)) if y_truth[x] == True and y_pred[x] == False])
+print("\nFP: " + str(FP / len(y_truth)))
+print("FN: " + str(FN / len(y_truth)))
 
 
 
-
+#  Fairly fast for many datapoints, less fast for many dimensions
 def find_pareto(data):
     is_Pareto = np.ones(data.shape[0], dtype = bool)
     for i, c in enumerate(data):
@@ -272,11 +277,4 @@ plt.title('Example of a Minimization Result\n with AUC = ' + str(auc))
 plt.xlabel('False Negative')
 plt.ylabel('False Positive')
 
-# Maximization
-#plt.title('Example of a Maximization Result')
-#plt.xlabel('True Negative')
-#plt.ylabel('True Positive')
-
 plt.show()
-
-find_pareto(predictions)

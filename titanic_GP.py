@@ -22,9 +22,9 @@ import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
-
-import networkx as nx
-import pygraphviz as pgv
+#
+#import networkx as nx
+#import pygraphviz as pgv
 
 """----Data Processing----"""
 
@@ -216,7 +216,17 @@ toolbox.register("evaluate", evaluate, points=X_train.values, pset=pset)
 
 """Need to find best selection, mating, mutation methods"""
 
-toolbox.register("select", tools.selTournament, tournsize=3)
+NOBJ = 2
+P = [2, 1]
+SCALES = [1, 0.5]
+
+# Create, combine and removed duplicates
+ref_points = [tools.uniform_reference_points(NOBJ, p, s) for p, s in zip(P, SCALES)]
+ref_points = np.concatenate(ref_points, axis=0)
+_, uniques = np.unique(ref_points, axis=0, return_index=True)
+ref_points = ref_points[uniques]
+
+toolbox.register("select", tools.selNSGA3, ref_points=ref_points)
 toolbox.register("mate", gp.cxOnePoint)
 toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
 toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
@@ -304,24 +314,24 @@ hof, pop = evolvePop(popSize,mateRate,mutRate)
 graphPareto(hof,pop)
     
 #TREE VISUALIZATION CODE
-pset.renameArguments(ARG0="x")
-pset.renameArguments(ARG1="y")
-expr = []
-for n in hof:
-    expr = expr + n
-
-nodes, edges, labels = gp.graph(expr)
-    
-g = pgv.AGraph()
-g.add_nodes_from(nodes)
-g.add_edges_from(edges)
-g.layout(prog="dot")
-        
-for i in nodes:
-    n = g.get_node(i)
-    n.attr["label"] = labels[i]
-        
-g.draw("tree.pdf")    
+#pset.renameArguments(ARG0="x")
+#pset.renameArguments(ARG1="y")
+#expr = []
+#for n in hof:
+#    expr = expr + n
+#
+#nodes, edges, labels = gp.graph(expr)
+#    
+#g = pgv.AGraph()
+#g.add_nodes_from(nodes)
+#g.add_edges_from(edges)
+#g.layout(prog="dot")
+#        
+#for i in nodes:
+#    n = g.get_node(i)
+#    n.attr["label"] = labels[i]
+#        
+#g.draw("tree.pdf")    
 
 
     

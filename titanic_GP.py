@@ -22,9 +22,8 @@ import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
 
-import matplotlib.pyplot as plt
-import networkx as nxs
-
+import networkx as nx
+import pygraphviz as pgv
 
 """----Data Processing----"""
 
@@ -202,7 +201,7 @@ random.seed(25)
 
 toolbox = base.Toolbox()
 toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=1, max_=2)
-toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr())
+toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("compile", gp.compile, pset=pset)
 
@@ -241,13 +240,11 @@ def pareto_dominance(ind1, ind2):
 
 """----Genetic Algorithm----"""
 
-
-
 popSize = 400
 mateRate = .8
 mutRate = .3
 
-def evolvePop(popSize,mateRate,mutRate,):
+def evolvePop(popSize,mateRate,mutRate):
     
     pop = toolbox.population(n=popSize)
     hof = tools.ParetoFront()
@@ -283,6 +280,21 @@ def evolvePop(popSize,mateRate,mutRate,):
             
         pop[:] = offspring
         hof.update(pop)
+    #TREE VISUALIZATION CODE
+    expr = toolbox.individual()
+    nodes, edges, labels = gp.graph(expr)
+
+    g = pgv.AGraph()
+    g.add_nodes_from(nodes)
+    g.add_edges_from(edges)
+    g.layout(prog="dot")
+    
+    for i in nodes:
+        n = g.get_node(i)
+        n.attr["label"] = labels[i]
+    
+    g.draw("tree.pdf")
+    
     return hof,pop
 
 def graphPareto(hof,pop):
@@ -359,15 +371,4 @@ graphPareto(hof,pop)
 
             
 # Tree Visualization
-expr1 = toolbox.individual()
-nodes, edges, labels = gp.graph(expr1)
 
-g = nx.Graph()
-g.add_nodes_from(nodes)
-g.add_edges_from(edges)
-pos = nx.graphviz_layout(g, prog="dot")
-
-nx.draw_networkx_nodes(g, pos)
-nx.draw_networkx_edges(g, pos)
-nx.draw_networkx_labels(g, pos, labels)
-plt.show()

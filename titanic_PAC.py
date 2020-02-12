@@ -3,6 +3,7 @@ import pandas as pd
 # Numpy lets us work with arrays
 import numpy as np
 import re
+import matplotlib.pyplot as plt
 # Sklearn provides various modules with a common API
 from sklearn import svm, tree, neighbors, neural_network
 from sklearn.linear_model import SGDClassifier
